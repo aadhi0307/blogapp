@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="container mx-auto max-w-md bg-white p-6 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-4 text-center">Edit Profile</h1>
+
+        <form id="profileForm">
+            <div class="mb-4">
+                <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                <input type="text" id="username" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" readonly>
+            </div>
+
+            <div class="mb-4">
+                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" id="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+
+            <div class="mb-4">
+                <label for="phone_number" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                <input type="text" id="phone_number" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+
+            <div class="mb-4">
+                <label for="profile_pic" class="block text-sm font-medium text-gray-700">Profile Picture</label>
+                <input type="file" id="profile_pic" class="mt-1 block w-full text-sm text-gray-500">
+            </div>
+
+            <div class="mt-6">
+                <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">Save Changes</button>
+            </div>
+
+            <p id="message" class="mt-4 text-center text-red-500"></p>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const userId = localStorage.getItem('user_id'); // Fetch the user ID from local storage
+            const profileForm = document.getElementById('profileForm');
+            const message = document.getElementById('message');
+
+            try {
+                // Fetch the current user profile data
+                const response = await fetch(`http://127.0.0.1:8000/profile/${userId}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    message.textContent = 'Failed to load profile.';
+                    return;
+                }
+
+                const data = await response.json();
+                document.getElementById('username').value = data.username;
+                document.getElementById('email').value = data.email;
+                document.getElementById('phone_number').value = data.phone_number;
+
+                // If profile pic exists, display it
+                if (data.profile_pic) {
+                    const profilePicContainer = document.createElement('div');
+                    profilePicContainer.classList.add('mb-4');
+                    profilePicContainer.innerHTML = `<img src="${data.profile_pic}" alt="Profile Picture" class="w-24 h-24 rounded-full mx-auto mb-2">`;
+                    profileForm.insertBefore(profilePicContainer, profileForm.firstChild);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                message.textContent = 'Error occurred while fetching the profile data.';
+            }
+
+            // Handle form submission for profile update
+            profileForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const email = document.getElementById('email').value;
+                const phoneNumber = document.getElementById('phone_number').value;
+                const profilePic = document.getElementById('profile_pic').files[0];
+
+                const formData = new FormData();
+                formData.append('email', email);
+                formData.append('phone_number', phoneNumber);
+                if (profilePic) {
+                    formData.append('profile_pic', profilePic);
+                }
+
+                try {
+                    const response = await fetch(`http://127.0.0.1:8000/profile/${userId}/`, {
+                        method: 'PUT',
+                        body: formData,
+                    });
+
+                    const responseData = await response.json();
+
+                    if (response.ok) {
+                        message.textContent = 'Profile updated successfully!';
+                        message.classList.remove('text-red-500');
+                        message.classList.add('text-green-500');
+                    } else {
+                        message.textContent = responseData.error || 'Failed to update profile.';
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    message.textContent = 'Error occurred. Please try again.';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

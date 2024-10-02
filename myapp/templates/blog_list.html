@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog List</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+        
+        .stylish-font {
+            font-family: 'Pacifico', cursive;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+    <!-- Navbar -->
+    <nav class="bg-blue-500 shadow-md p-4 mb-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl stylish-font text-white">Bloggers World</h1>
+            <div class="block lg:hidden">
+                <button id="navToggle" class="text-white focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <ul id="navLinks" class="hidden lg:flex space-x-6">
+                <li><a href="/blog_list/" class="text-white hover:text-gray-200">Home</a></li>
+                <li><a href="/blog1/" class="text-white hover:text-gray-200">Add Blog</a></li>
+                <li><a href="/edit_profile/" class="text-white hover:text-gray-200">Edit Profile</a></li>
+            </ul>
+        </div>
+
+        <ul id="mobileNavLinks" class="lg:hidden mt-4 hidden space-y-2">
+            <li><a href="/" class="block text-white hover:bg-blue-600 py-2 px-4">Home</a></li>
+            <li><a href="/blog1/" class="block text-white hover:bg-blue-600 py-2 px-4">Add Blog</a></li>
+            <li><a href="/edit_profile/" class="block text-white hover:bg-blue-600 py-2 px-4">Edit Profile</a></li>
+        </ul>
+    </nav>
+    {% block content %}
+
+    <div class="container mx-auto">
+        <div id="blog-posts-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {% for post in blog_posts %}
+            <div class="bg-white p-4 rounded-lg shadow-lg flex flex-col">
+                <h2 class="text-xl font-bold mb-2">{{ post.title }}</h2>
+                <p class="text-gray-700 flex-grow mb-4 break-words">{{ post.content }}</p>
+                {% if post.image %}
+                <img src="{{ post.image.url }}" class="w-full h-auto rounded-md mb-4" />
+                {% endif %}
+                <p class="text-sm text-gray-500 mt-auto">Tags: {{ post.tags|default:"None" }}</p>
+                <a href="{% url 'detail_blog_post' user_id=post.user.id post_id=post.id %}" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">View Post</a>
+            </div>
+            {% endfor %}
+        </div>
+      
+
+        <p id="message" class="mt-4 text-center text-red-500"></p>
+    </div>
+    {% endblock %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const userId = localStorage.getItem('user_id');
+            const blogPostsContainer = document.getElementById('blog-posts-container');
+            const messageContainer = document.getElementById('message');
+            const navToggle = document.getElementById('navToggle');
+            const mobileNavLinks = document.getElementById('mobileNavLinks');
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/blog-posts/${userId}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Fetch error:', errorData);
+                    messageContainer.textContent = 'Failed to fetch blog posts';
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.results.length === 0) {
+                    blogPostsContainer.innerHTML = '<p class="text-center text-gray-500">No blog posts found.</p>';
+                    return;
+                }
+
+                data.results.forEach(post => {
+                    const postElement = `
+                        <div class="bg-white p-4 rounded-lg shadow-lg flex flex-col">
+                            <h2 class="text-xl font-bold mb-2">${post.title}</h2>
+                            <p class="text-gray-700 flex-grow mb-4 break-words">${post.content}</p>
+                            ${post.image ? `<img src="${post.image}" class="w-full h-auto rounded-md mb-4"/>` : ''}
+                            <p class="text-sm text-gray-500 mt-auto">Tags: ${post.tags ? post.tags : 'None'}</p>
+                            <a href="/blog/${post.user_id}/${post.id}/" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">View Post</a>
+                        </div>
+                    `;
+                    blogPostsContainer.insertAdjacentHTML('beforeend', postElement);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                messageContainer.textContent = 'Error occurred. Please check the console for more details.';
+            }
+
+            navToggle.addEventListener('click', function() {
+                mobileNavLinks.classList.toggle('hidden');
+            });
+        });
+    </script>
+</body>
+</html>

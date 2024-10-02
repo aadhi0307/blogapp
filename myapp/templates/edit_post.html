@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Blog Post</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="container mx-auto max-w-md bg-white p-6 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-4 text-center">Edit Blog Post</h1>
+
+        <form id="blogPostForm">
+            <div class="mb-4">
+                <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
+                <input type="text" id="title" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <div class="mb-4">
+                <label for="content" class="block text-sm font-medium text-gray-700">Content</label>
+                <textarea id="content" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+            </div>
+            <div class="mb-4">
+                <label for="tags" class="block text-sm font-medium text-gray-700">Tags</label>
+                <input type="text" id="tags" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+
+            <div class="mt-6">
+                <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">Save Changes</button>
+            </div>
+
+            <p id="message" class="mt-4 text-center text-red-500"></p>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const userId = localStorage.getItem('userId'); // Get user ID from local storage
+            const postId = localStorage.getItem('postId'); // Get post ID from local storage
+            const blogPostForm = document.getElementById('blogPostForm');
+            const message = document.getElementById('message');
+
+            try {
+                // Fetch the blog post data
+                const response = await fetch(`http://127.0.0.1:8000/api/blog-posts/${userId}/${postId}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    message.textContent = 'Failed to load blog post.';
+                    return;
+                }
+
+                const data = await response.json();
+                document.getElementById('title').value = data.title;
+                document.getElementById('content').value = data.content;
+                document.getElementById('tags').value = data.tags;
+
+            } catch (error) {
+                console.error('Error:', error);
+                message.textContent = 'Error occurred while fetching the blog post data.';
+            }
+
+            // Handle form submission for updating the blog post
+            blogPostForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const title = document.getElementById('title').value;
+                const content = document.getElementById('content').value;
+                const tags = document.getElementById('tags').value;
+
+                const updatedData = {
+                    title,
+                    content,
+                    tags
+                };
+
+                try {
+                    const response = await fetch(`http://127.0.0.1:8000/api/blog-posts/${userId}/${postId}/`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(updatedData),
+                    });
+
+                    if (response.ok) {
+                        const responseData = await response.json();
+                        message.textContent = 'Blog post updated successfully!';
+                        message.classList.remove('text-red-500');
+                        message.classList.add('text-green-500');
+                        // Optionally redirect or perform other actions
+                    } else {
+                        const responseData = await response.json();
+                        message.textContent = responseData.error || 'Failed to update blog post.';
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    message.textContent = 'Error occurred. Please try again.';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
